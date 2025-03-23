@@ -4,7 +4,18 @@
     <title>Upload CSV File</title>
 </head>
 <body>
-    <h1>Upload Your CSV File for K-Anonymity Processing</h1>
+    <h1>Upload Your CSV File</h1>
+    
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div style="color: red;">
+          {% for message in messages %}
+            <p>{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    
     <form method="post" enctype="multipart/form-data">
         <input type="file" name="file" accept=".csv" required>
         <br><br>

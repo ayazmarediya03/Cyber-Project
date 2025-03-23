@@ -17,7 +17,18 @@
     </style>
 </head>
 <body>
-    <h1>Preview of Anonymized Data</h1>
+    <h1>Preview of Anonymized Data (First 10 Rows)</h1>
+    
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div style="color: red;">
+          {% for message in messages %}
+            <p>{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    
     <div>
         {{ anonymized_table|safe }}
     </div>

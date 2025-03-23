@@ -6,16 +6,19 @@ import anjana.anonymity as anonymity
 from anjana.anonymity import utils
 
 app = Flask(__name__)
-app.secret_key = 'some_secret_key'  # Change for production
+app.secret_key = 'some_secret_key'  # Change this in production
 
-# Directories for file storage
+# Folders for storing uploaded and processed files
 UPLOAD_FOLDER = 'uploads'
 PROCESSED_FOLDER = 'processed'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PROCESSED_FOLDER, exist_ok=True)
 
-# Utility function for numeric intervals
 def generate_intervals(values, interval):
+    """
+    Helper function to convert numeric values into interval strings.
+    For example, if interval=10 and value=27 -> "20-29"
+    """
     intervals = []
     for v in values:
         lower_bound = (v // interval) * interval
@@ -27,8 +30,11 @@ def generate_intervals(values, interval):
 def index():
     return render_template('index.html')
 
-@app.route('/upload', methods=['GET','POST'])
+@app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
+    """
+    Upload a CSV file and display its first 10 rows as a preview.
+    """
     if request.method == 'POST':
         if 'file' not in request.files:
             flash("No file part")
@@ -37,23 +43,33 @@ def upload_file():
         if file.filename == '':
             flash("No selected file")
             return redirect(request.url)
+        
         filepath = os.path.join(UPLOAD_FOLDER, file.filename)
         file.save(filepath)
+        
         try:
             df = pd.read_csv(filepath)
         except Exception as e:
             flash("Error reading CSV: " + str(e))
             return redirect(request.url)
+        
         preview_html = df.head(10).to_html(classes="table table-striped", index=False)
         return render_template('upload_preview.html', filename=file.filename, preview=preview_html)
+    
     return render_template('upload.html')
 
-@app.route('/select_columns', methods=['GET','POST'])
+@app.route('/select_columns', methods=['GET', 'POST'])
 def select_columns():
+    """
+    Allows the user to assign roles to columns, pick the anonymization method (k-anonymity or l-diversity),
+    choose k, suppression level (supp_level), (and l if l-diversity is selected), and define hierarchy types (none, masking, interval)
+    for quasi or sensitive columns.
+    """
     filename = request.args.get('filename')
     if not filename:
         flash("No file provided")
         return redirect(url_for('upload_file'))
+    
     filepath = os.path.join(UPLOAD_FOLDER, filename)
     try:
         df = pd.read_csv(filepath)
@@ -61,95 +77,148 @@ def select_columns():
         flash("Error reading CSV: " + str(e))
         return redirect(url_for('upload_file'))
     
-    # Get the list of columns from the CSV dynamically.
     columns = df.columns.tolist()
-    # Build a dictionary with column types (numeric or string)
-    col_types = {col: ("numeric" if pd.api.types.is_numeric_dtype(df[col]) else "string") 
-                 for col in columns}
+    
+    # Determine column types (for our purposes, we use pandas detection)
+    col_types = {}
+    for col in columns:
+        if pd.api.types.is_numeric_dtype(df[col]):
+            col_types[col] = "numeric"
+        else:
+            col_types[col] = "string"
+    
+    # Compute maximum string length for each column using the string representation.
+    # This is done for every column so that masking works even for numeric columns.
+    max_len_map = {}
+    for col in columns:
+        max_len_map[col] = df[col].astype(str).apply(len).max()
+    
     original_preview = df.head(10).to_html(classes="table table-striped", index=False)
     
     if request.method == 'POST':
-        # Collect roles for each column.
+        # Collect roles for each column
         roles = {}
         for col in columns:
-            role = request.form.get(col)
-            if role and role != 'none':
+            role = request.form.get(f"{col}_role", "none")
+            if role != "none":
                 roles[col] = role
         
         if not roles:
             flash("Please select a role for at least one column!")
-            return render_template('select_columns.html', columns=columns, filename=filename,
-                                   original_preview=original_preview, col_types=col_types)
+            return render_template(
+                'select_columns.html',
+                columns=columns,
+                col_types=col_types,
+                max_len_map=max_len_map,
+                original_preview=original_preview
+            )
         
-        # Get the chosen anonymization method.
-        method = request.form.get("method")
+        # Get the anonymization method (default to k-anonymity)
+        method = request.form.get("method", "k_anonymity")
         
-        # Get k and suppression level.
+        # Get k and suppression level values
         try:
-            k_value = int(request.form.get("k"))
-            supp_level_value = int(request.form.get("supp_level"))
+            k_value = int(request.form.get("k", "3"))
+            supp_level_value = int(request.form.get("supp_level", "0"))
         except (TypeError, ValueError):
-            flash("Invalid k or suppression level value. Please enter valid integers.")
-            return render_template('select_columns.html', columns=columns, filename=filename,
-                                   original_preview=original_preview, col_types=col_types)
+            flash("Invalid k or suppression level. Please enter valid integers.")
+            return render_template(
+                'select_columns.html',
+                columns=columns,
+                col_types=col_types,
+                max_len_map=max_len_map,
+                original_preview=original_preview
+            )
         
-        # If l-diversity is chosen, get the l value.
+        # If l-diversity is selected, get the l value.
         if method == "l_diversity":
             try:
-                l_div = int(request.form.get("l_div"))
+                l_div = int(request.form.get("l_div", "2"))
             except (TypeError, ValueError):
                 flash("Invalid l value for l-diversity. Please enter a valid integer.")
-                return render_template('select_columns.html', columns=columns, filename=filename,
-                                       original_preview=original_preview, col_types=col_types)
+                return render_template(
+                    'select_columns.html',
+                    columns=columns,
+                    col_types=col_types,
+                    max_len_map=max_len_map,
+                    original_preview=original_preview
+                )
         
-        # Build lists for each role.
-        quasi_ident = [col for col, role in roles.items() if role == 'quasi']
-        ident = [col for col, role in roles.items() if role == 'ident']
-        sens_att_list = [col for col, role in roles.items() if role == 'sensitive']
+        # Build role-based lists
+        quasi_ident = [col for col, r in roles.items() if r == 'quasi']
+        ident = [col for col, r in roles.items() if r == 'ident']
+        sens_att_list = [col for col, r in roles.items() if r == 'sensitive']
         
-        # Build the dynamic hierarchies.
+        # Build dynamic hierarchies based on user input.
         hierarchies = {}
-        for col in roles:
-            # Only apply hierarchy if role is quasi or sensitive.
-            if roles[col] in ['quasi', 'sensitive']:
-                # Get the selected hierarchy type from the form.
-                hier_type = request.form.get(f"hier_{col}", "none")
-                if hier_type != "none":
-                    if col_types[col] == "numeric":
-                        if hier_type == "interval5":
-                            hierarchies[col] = {
-                                0: df[col].values,
-                                1: generate_intervals(df[col].values, 5)
-                            }
-                        elif hier_type == "interval10":
-                            hierarchies[col] = {
-                                0: df[col].values,
-                                1: generate_intervals(df[col].values, 10)
-                            }
-                    else:  # string type
-                        if hier_type == "substring":
-                            # Level 0: original, Level 1: remove last character then append '*', Level 2: full suppression.
-                            hierarchies[col] = {
-                                0: df[col].values,
-                                1: df[col].astype(str).apply(lambda x: x[:-1] + "*" if len(x) > 0 else "*").values,
-                                2: np.array(["*"] * len(df[col].values))
-                            }
-                        elif hier_type == "suppression":
-                            hierarchies[col] = {
-                                0: df[col].values,
-                                1: np.array(["*"] * len(df[col].values))
-                            }
-        # Debug: you may flash the generated hierarchies for inspection.
-        # flash(str(hierarchies))
+        for i, col in enumerate(columns):
+            if col in roles and roles[col] in ['quasi', 'sensitive']:
+                hier_type_field = f"hier_type_{i}"
+                hier_level_field = f"hier_level_{i}"
+                chosen_type = request.form.get(hier_type_field, "none")
+                chosen_level = request.form.get(hier_level_field, "none")
+                
+                if chosen_type == "none":
+                    hierarchies[col] = {0: df[col].values}
+                    continue
+                
+                if col_types[col] == "string":
+                    # For string columns: if masking is chosen, build levels 0..mask_level
+                    if chosen_type == "masking":
+                        try:
+                            mask_level = int(chosen_level)
+                        except:
+                            mask_level = 0
+                        hierarchy_dict = {0: df[col].values}
+                        for lvl in range(1, mask_level + 1):
+                            def mask_func(x, lvl=lvl):
+                                return x[:-lvl] + ("*" * lvl) if len(x) > lvl else "*" * lvl
+                            hierarchy_dict[lvl] = df[col].astype(str).apply(mask_func).values
+                        hierarchies[col] = hierarchy_dict
+                    elif chosen_type == "interval":
+                        try:
+                            interval_val = int(chosen_level)
+                        except:
+                            interval_val = 10
+                        if interval_val <= 0:
+                            interval_val = 10
+                        # For strings, interval is less meaningful – we use a simple suppression alternative.
+                        hierarchies[col] = {
+                            0: df[col].values,
+                            1: np.array(["*"] * len(df[col].values))
+                        }
+                else:
+                    # For numeric columns:
+                    if chosen_type == "masking":
+                        try:
+                            mask_level = int(chosen_level)
+                        except:
+                            mask_level = 0
+                        hierarchy_dict = {0: df[col].values}
+                        for lvl in range(1, mask_level + 1):
+                            def mask_num(n, lvl=lvl):
+                                s = str(int(n))
+                                return s[:-lvl] + ("*" * lvl) if len(s) > lvl else "*" * lvl
+                            hierarchy_dict[lvl] = df[col].astype(str).apply(mask_num).values
+                        hierarchies[col] = hierarchy_dict
+                    elif chosen_type == "interval":
+                        try:
+                            interval_val = int(chosen_level)
+                        except:
+                            interval_val = 10
+                        if interval_val <= 0:
+                            interval_val = 10
+                        hierarchies[col] = {
+                            0: df[col].values,
+                            1: generate_intervals(df[col].values, interval_val)
+                        }
         
-        # Run the anonymization process.
+        # Run the chosen anonymization
         try:
             if method == "l_diversity":
-                # For l-diversity, require exactly one sensitive attribute.
                 if len(sens_att_list) != 1:
                     flash("For l-diversity, please select exactly one sensitive attribute.")
-                    return render_template('select_columns.html', columns=columns, filename=filename,
-                                           original_preview=original_preview, col_types=col_types)
+                    return redirect(url_for('select_columns', filename=filename))
                 anonymized_df = anonymity.l_diversity(
                     data=df,
                     ident=ident,
@@ -173,21 +242,6 @@ def select_columns():
             flash("Anonymization error: " + str(e))
             return redirect(url_for('select_columns', filename=filename))
         
-        # Save the anonymized CSV.
         processed_filename = f'anonymized_{filename}'
         processed_filepath = os.path.join(PROCESSED_FOLDER, processed_filename)
-        anonymized_df.to_csv(processed_filepath, index=False)
-        
-        anonymized_preview = anonymized_df.head(10).to_html(classes="table table-striped", index=False)
-        return render_template('preview.html', anonymized_table=anonymized_preview, download_filename=processed_filename)
-    
-    return render_template('select_columns.html', columns=columns, filename=filename,
-                           original_preview=original_preview, col_types=col_types)
-
-@app.route('/download/<filename>')
-def download_file(filename):
-    filepath = os.path.join(PROCESSED_FOLDER, filename)
-    return send_file(filepath, as_attachment=True)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+        anonymized_df.to_

@@ -4,7 +4,18 @@
     <title>Uploaded CSV Preview</title>
 </head>
 <body>
-    <h1>Uploaded CSV File Preview</h1>
+    <h1>Uploaded CSV File Preview (First 10 Rows)</h1>
+    
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div style="color: red;">
+          {% for message in messages %}
+            <p>{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    
     <div>
         {{ preview|safe }}
     </div>

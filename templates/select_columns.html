@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Select Columns and Set Attributes</title>
+    <title>Select Columns and Define Hierarchies</title>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
         var lRadio = document.getElementById('l_diversity');
         var kRadio = document.getElementById('k_anonymity');
         var lDivContainer = document.getElementById('l_div_container');
+        
         function toggleLDiv() {
            if(lRadio.checked) {
                lDivContainer.style.display = 'block';
@@ -14,21 +15,71 @@
                lDivContainer.style.display = 'none';
            }
         }
-        lRadio.addEventListener('change', toggleLDiv);
-        kRadio.addEventListener('change', toggleLDiv);
-        toggleLDiv(); // initialize on page load
+        if (lRadio && kRadio) {
+          lRadio.addEventListener('change', toggleLDiv);
+          kRadio.addEventListener('change', toggleLDiv);
+          toggleLDiv(); // initialize on page load
+        }
+        
+        // Dynamically update Hierarchy Level options when the hierarchy type changes.
+        let table = document.getElementById('colTable');
+        if (table) {
+          for (let i = 1; i < table.rows.length; i++) {
+            let typeSelect = document.getElementById(`hier_type_${i-1}`);
+            if (typeSelect) {
+              typeSelect.addEventListener('change', function() {
+                updateHierarchyLevel(i-1);
+              });
+            }
+            updateHierarchyLevel(i-1); // initialize for each row
+          }
+        }
       });
+      
+      function updateHierarchyLevel(index) {
+        let typeSelect = document.getElementById(`hier_type_${index}`);
+        let levelSelect = document.getElementById(`hier_level_${index}`);
+        if (!typeSelect || !levelSelect) return;
+        
+        // Clear out old options
+        levelSelect.innerHTML = "";
+        
+        let chosenType = typeSelect.value;
+        let maxLen = parseInt(levelSelect.getAttribute("data-max-len"));
+        
+        if (chosenType === "masking") {
+          // Options from 0 up to maxLen
+          for (let i = 0; i <= maxLen; i++) {
+            let opt = document.createElement("option");
+            opt.value = i;
+            opt.text = `Masking Level ${i}`;
+            levelSelect.appendChild(opt);
+          }
+        } else if (chosenType === "interval") {
+          // Options from 0 to 100 in steps of 2
+          for (let val = 0; val <= 100; val += 2) {
+            let opt = document.createElement("option");
+            opt.value = val;
+            opt.text = `Interval Size ${val}`;
+            levelSelect.appendChild(opt);
+          }
+        } else {
+          let opt = document.createElement("option");
+          opt.value = "none";
+          opt.text = "No Hierarchy";
+          levelSelect.appendChild(opt);
+        }
+      }
     </script>
 </head>
 <body>
-    <h1>Select Columns for Further Processing</h1>
+    <h1>Select Columns & Define Hierarchies</h1>
     
-    <!-- Inline flash messages for warnings -->
     {% with messages = get_flashed_messages() %}
       {% if messages %}
-        <div class="flash-messages">
+        <div style="color: red;">
           {% for message in messages %}
-            <p style="color: red;">{{ message }}</p>
+            <p>{{ message }}</p>
           {% endfor %}
         </div>
       {% endif %}
@@ -39,19 +90,19 @@
         {{ original_preview|safe }}
     </div>
     
-    <p>For each column in your CSV, select its role and (if applicable) its hierarchy type:</p>
     <form method="post">
-        <table border="1" cellpadding="5" cellspacing="0">
+        <table border="1" cellpadding="5" cellspacing="0" id="colTable">
             <tr>
                 <th>Column</th>
                 <th>Role</th>
                 <th>Hierarchy Type</th>
+                <th>Hierarchy Level</th>
             </tr>
             {% for col in columns %}
             <tr>
                 <td>{{ col }}</td>
                 <td>
-                    <select name="{{ col }}">
+                    <select name="{{ col }}_role">
                         <option value="none">Ignore</option>
                         <option value="quasi">Quasi-Identifier</option>
                         <option value="ident">Identifier</option>
@@ -59,44 +110,34 @@
                     </select>
                 </td>
                 <td>
-                    {% if col_types[col] == "numeric" %}
-                      <select name="hier_{{ col }}">
-                          <option value="none">None</option>
-                          <option value="interval5">Interval (5)</option>
-                          <option value="interval10">Interval (10)</option>
-                      </select>
-                    {% else %}
-                      <select name="hier_{{ col }}">
-                          <option value="none">None</option>
-                          <option value="substring">Substring</option>
-                          <option value="suppression">Suppression</option>
-                      </select>
-                    {% endif %}
+                    <select name="hier_type_{{ loop.index0 }}" id="hier_type_{{ loop.index0 }}">
+                        <option value="none">None</option>
+                        <option value="masking">Masking</option>
+                        <option value="interval">Interval</option>
+                    </select>
+                </td>
+                <td>
+                    <select name="hier_level_{{ loop.index0 }}" 
+                            id="hier_level_{{ loop.index0 }}"
+                            data-max-len="{{ max_len_map[col] }}">
+                        <option value="none">No Hierarchy</option>
+                    </select>
                 </td>
             </tr>
             {% endfor %}
         </table>
-        <br>
-        <!-- Input fields for k and suppression level -->
+        
+        <br><br>
         <label for="k">Enter k value:</label>
-        <input type="number" name="k" min="1" required>
+        <input type="number" name="k" min="1" value="3" required>
         <br><br>
+        
         <label for="supp_level">Enter Suppression Level:</label>
-        <input type="number" name="supp_level" min="0" required>
+        <input type="number" name="supp_level" min="0" value="0" required>
         <br><br>
-        <!-- Radio buttons for method selection -->
+        
         <label>Choose anonymization method:</label><br>
         <input type="radio" name="method" value="k_anonymity" id="k_anonymity" checked>
         <label for="k_anonymity">K-Anonymity</label><br>
         <input type="radio" name="method" value="l_diversity" id="l_diversity">
-        <label for="l_diversity">L-Diversity</label><br><br>
-        <!-- Additional input for l value, shown only when l-diversity is selected -->
-        <div id="l_div_container" style="display: none;">
-          <label for="l_div">Enter l value for L-Diversity:</label>
-          <input type="number" name="l_div" min="1">
-          <br><br>
-        </div>
-        <input type="submit" value="Process">
-    </form>
-</body>
-</html>
+        <label for="l_div_
