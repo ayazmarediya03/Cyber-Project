@@ -39,12 +39,13 @@
         {{ original_preview|safe }}
     </div>
     
-    <p>For each column in your CSV, select its role:</p>
+    <p>For each column in your CSV, select its role and (if applicable) its hierarchy type:</p>
     <form method="post">
         <table border="1" cellpadding="5" cellspacing="0">
             <tr>
                 <th>Column</th>
                 <th>Role</th>
+                <th>Hierarchy Type</th>
             </tr>
             {% for col in columns %}
             <tr>
@@ -56,6 +57,21 @@
                         <option value="ident">Identifier</option>
                         <option value="sensitive">Sensitive Attribute</option>
                     </select>
+                </td>
+                <td>
+                    {% if col_types[col] == "numeric" %}
+                      <select name="hier_{{ col }}">
+                          <option value="none">None</option>
+                          <option value="interval5">Interval (5)</option>
+                          <option value="interval10">Interval (10)</option>
+                      </select>
+                    {% else %}
+                      <select name="hier_{{ col }}">
+                          <option value="none">None</option>
+                          <option value="substring">Substring</option>
+                          <option value="suppression">Suppression</option>
+                      </select>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
