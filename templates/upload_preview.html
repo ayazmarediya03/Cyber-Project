@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Uploaded CSV Preview</title>
+</head>
+<body>
+    <h1>Uploaded CSV File Preview</h1>
+    <div>
+        {{ preview|safe }}
+    </div>
+    <br>
+    <a href="{{ url_for('select_columns', filename=filename) }}">
+        <button>Continue to Column Selection</button>
+    </a>
+</body>
+</html>

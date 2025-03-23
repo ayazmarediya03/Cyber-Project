@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Select Columns and Set Attributes</title>
+</head>
+<body>
+    <h1>Select Columns for Further Processing</h1>
+    
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul style="color: red;">
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    
+    <h2>Uploaded CSV Preview (First 10 Rows)</h2>
+    <div>
+        {{ original_preview|safe }}
+    </div>
+    
+    <p>For each column in your CSV, select its role:</p>
+    <form method="post">
+        <table border="1" cellpadding="5" cellspacing="0">
+            <tr>
+                <th>Column</th>
+                <th>Role</th>
+            </tr>
+            {% for col in columns %}
+            <tr>
+                <td>{{ col }}</td>
+                <td>
+                    <select name="{{ col }}">
+                        <option value="none">Ignore</option>
+                        <option value="quasi">Quasi-Identifier</option>
+                        <option value="ident">Identifier</option>
+                        <option value="sensitive">Sensitive Attribute</option>
+                    </select>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        <br>
+        <input type="submit" value="Process">
+    </form>
+</body>
+</html>
