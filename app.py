@@ -1,9 +1,22 @@
 import os
-import pandas as pd
-import numpy as np
-from flask import Flask, render_template, request, redirect, url_for, send_file, flash
-import anjana.anonymity as anonymity
-from anjana.anonymity import utils
+try:
+    import pandas as pd
+    import numpy as np
+    from flask import Flask, render_template, request, redirect, url_for, send_file, flash
+    import anjana.anonymity as anonymity
+    from anjana.anonymity import utils
+except ImportError as e:
+    print(f"{e}. Installing missing packages...")
+    import os
+    os.system("pip install pandas numpy flask anjana")  # Install required libraries
+    import pandas as pd
+    import numpy as np
+    from flask import Flask, render_template, request, redirect, url_for, send_file, flash
+    import anjana.anonymity as anonymity
+    from anjana.anonymity import utils
+
+# Now you can use all the imported libraries
+print("All libraries imported successfully!")
 
 app = Flask(__name__)
 app.secret_key = 'some_secret_key'  # Change this for production
