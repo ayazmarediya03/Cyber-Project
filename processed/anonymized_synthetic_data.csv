@@ -1,7 +1,7 @@
 ID,Age,Gender,ZipCode,Occupation
-*,"[30, 40)",F,1234*,Engineer
-*,"[30, 40)",F,1234*,Engineer
-*,"[30, 40)",F,1234*,Engineer
-*,"[40, 50)",M,5432*,Doctor
-*,"[40, 50)",M,5432*,Doctor
-*,"[40, 50)",M,5432*,Doctor
+1,"[30, 40)",F,12341,Engineer
+2,"[30, 40)",F,12342,Engineer
+3,"[30, 40)",F,12343,Engineer
+4,"[40, 50)",M,54321,Doctor
+5,"[40, 50)",M,54322,Doctor
+6,"[40, 50)",M,54323,Doctor

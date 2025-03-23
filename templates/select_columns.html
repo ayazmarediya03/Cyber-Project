@@ -6,13 +6,14 @@
 <body>
     <h1>Select Columns for Further Processing</h1>
     
+    <!-- Display flash messages as inline warnings -->
     {% with messages = get_flashed_messages() %}
       {% if messages %}
-        <ul style="color: red;">
+        <div class="flash-messages">
           {% for message in messages %}
-            <li>{{ message }}</li>
+            <p style="color: red;">{{ message }}</p>
           {% endfor %}
-        </ul>
+        </div>
       {% endif %}
     {% endwith %}
     
@@ -43,6 +44,13 @@
             {% endfor %}
         </table>
         <br>
+        <!-- New input fields for k and supp_level -->
+        <label for="k">Enter k value:</label>
+        <input type="number" name="k" min="1" required>
+        <br><br>
+        <label for="supp_level">Enter Suppression Level:</label>
+        <input type="number" name="supp_level" min="0" required>
+        <br><br>
         <input type="submit" value="Process">
     </form>
 </body>

@@ -36,7 +36,6 @@ def upload_file():
             flash("Error reading CSV: " + str(e))
             return redirect(request.url)
         preview_html = df.head(10).to_html(classes="table table-striped", index=False)
-        # Show preview and button to continue to column selection
         return render_template('upload_preview.html', filename=file.filename, preview=preview_html)
     return render_template('upload.html')
 
@@ -52,6 +51,7 @@ def select_columns():
     except Exception as e:
         flash("Error reading CSV: " + str(e))
         return redirect(url_for('upload_file'))
+    
     columns = df.columns.tolist()
     original_preview = df.head(10).to_html(classes="table table-striped", index=False)
     
@@ -65,17 +65,23 @@ def select_columns():
             flash("Please select a role for at least one column!")
             return render_template('select_columns.html', columns=columns, filename=filename, original_preview=original_preview)
         
+        # Get k and supp_level values from the form
+        try:
+            k_value = int(request.form.get('k'))
+            supp_level_value = int(request.form.get('supp_level'))
+        except (TypeError, ValueError):
+            flash("Invalid k or suppression level value. Please enter valid integers.")
+            return render_template('select_columns.html', columns=columns, filename=filename, original_preview=original_preview)
+        
         # Build lists of column names by role
         quasi_ident = [col for col, role in roles.items() if role == 'quasi']
         ident = [col for col, role in roles.items() if role == 'ident']
         sens_att = [col for col, role in roles.items() if role == 'sensitive']
         
-        # Parameters for k-anonymity
-        k = 3
-        supp_level = 0
-        
-        # Define hierarchies if the columns exist and were marked as quasi-identifiers.
+        # Build hierarchies for quasi-identifier columns
         hierarchies = {}
+        
+        # Hierarchy for ZipCode (or zipcode)
         zipcode_field = None
         if 'ZipCode' in quasi_ident and 'ZipCode' in df.columns:
             zipcode_field = 'ZipCode'
@@ -103,8 +109,7 @@ def select_columns():
                 2: utils.generate_intervals(df[age_field].values, 0, 100, 10),
             }
         
-        # Now add hierarchies for sensitive attributes:
-        
+        # Hierarchies for sensitive attributes:
         # Hierarchy for Gender (or gender)
         gender_field = None
         if 'Gender' in sens_att and 'Gender' in df.columns:
@@ -130,8 +135,12 @@ def select_columns():
                 2: np.array(["*"] * len(df[occupation_field].values))  # Full suppression
             }
         
-        # Run the k-anonymity process (may include l-diversity and t-closeness internally)
-        data_anon = k_anonymity(df, ident, quasi_ident, k, supp_level, hierarchies)
+        # Run the k-anonymity process; if not possible, catch the exception.
+        try:
+            data_anon = k_anonymity(df, ident, quasi_ident, k_value, supp_level_value, hierarchies)
+        except Exception as e:
+            flash("K-anonymity is not possible with the provided parameters: " + str(e))
+            return redirect(url_for('select_columns', filename=filename))
         
         # Save the anonymized CSV
         processed_filename = f'anonymized_{filename}'
