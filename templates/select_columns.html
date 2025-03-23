@@ -2,11 +2,28 @@
 <html>
 <head>
     <title>Select Columns and Set Attributes</title>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var lRadio = document.getElementById('l_diversity');
+        var kRadio = document.getElementById('k_anonymity');
+        var lDivContainer = document.getElementById('l_div_container');
+        function toggleLDiv() {
+           if(lRadio.checked) {
+               lDivContainer.style.display = 'block';
+           } else {
+               lDivContainer.style.display = 'none';
+           }
+        }
+        lRadio.addEventListener('change', toggleLDiv);
+        kRadio.addEventListener('change', toggleLDiv);
+        toggleLDiv(); // initialize on page load
+      });
+    </script>
 </head>
 <body>
     <h1>Select Columns for Further Processing</h1>
     
-    <!-- Display flash messages as inline warnings -->
+    <!-- Inline flash messages for warnings -->
     {% with messages = get_flashed_messages() %}
       {% if messages %}
         <div class="flash-messages">
@@ -44,13 +61,25 @@
             {% endfor %}
         </table>
         <br>
-        <!-- New input fields for k and supp_level -->
+        <!-- Input fields for k and suppression level -->
         <label for="k">Enter k value:</label>
         <input type="number" name="k" min="1" required>
         <br><br>
         <label for="supp_level">Enter Suppression Level:</label>
         <input type="number" name="supp_level" min="0" required>
         <br><br>
+        <!-- Radio buttons for method selection -->
+        <label>Choose anonymization method:</label><br>
+        <input type="radio" name="method" value="k_anonymity" id="k_anonymity" checked>
+        <label for="k_anonymity">K-Anonymity</label><br>
+        <input type="radio" name="method" value="l_diversity" id="l_diversity">
+        <label for="l_diversity">L-Diversity</label><br><br>
+        <!-- Additional input for l value, shown only when l-diversity is selected -->
+        <div id="l_div_container" style="display: none;">
+          <label for="l_div">Enter l value for L-Diversity:</label>
+          <input type="number" name="l_div" min="1">
+          <br><br>
+        </div>
         <input type="submit" value="Process">
     </form>
 </body>
