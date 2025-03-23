@@ -244,4 +244,23 @@ def select_columns():
         
         processed_filename = f'anonymized_{filename}'
         processed_filepath = os.path.join(PROCESSED_FOLDER, processed_filename)
-        anonymized_df.to_
+        anonymized_df.to_csv(processed_filepath, index=False)
+        
+        preview_html = anonymized_df.head(10).to_html(classes="table table-striped", index=False)
+        return render_template('preview.html', anonymized_table=preview_html, download_filename=processed_filename)
+    
+    return render_template(
+        'select_columns.html',
+        columns=columns,
+        col_types=col_types,
+        max_len_map=max_len_map,
+        original_preview=original_preview
+    )
+
+@app.route('/download/<filename>')
+def download_file(filename):
+    filepath = os.path.join(PROCESSED_FOLDER, filename)
+    return send_file(filepath, as_attachment=True)
+
+if __name__ == '__main__':
+    app.run(debug=True)
