@@ -69,7 +69,7 @@ def upload_file():
             flash("Error reading CSV: " + str(e))
             return redirect(request.url)
         
-        preview_html = df.head(10).to_html(classes="table table-striped", index=False)
+        preview_html = df.head(100).to_html(classes="table table-striped", index=False)
         return render_template('upload_preview.html', filename=file.filename, preview=preview_html)
     
     return render_template('upload.html')
@@ -109,7 +109,7 @@ def select_columns():
     for col in columns:
         max_len_map[col] = df[col].astype(str).apply(len).max()
     
-    original_preview = df.head(10).to_html(classes="table table-striped", index=False)
+    original_preview = df.head(100).to_html(classes="table table-striped", index=False)
     
     if request.method == 'POST':
         # Collect roles for each column
@@ -230,6 +230,122 @@ def select_columns():
                         }
                     elif chosen_type == 'default':
 
+                        if col == 'age':
+
+                            # hierarchy_dict = {0: df[col].values}                        
+                            # column_hierarchy = {
+                            hierarchies[col] = {
+                                0: df["age"].values,
+                                1: utils.generate_intervals(df["age"].values, 0, 100, 3),
+                                2: utils.generate_intervals(df["age"].values, 0, 100, 5),
+                                3: utils.generate_intervals(df["age"].values, 0, 100, 10),
+                                4: utils.generate_intervals(df["age"].values, 0, 100, 20),
+                                5: utils.generate_intervals(df["age"].values, 0, 100, 50),
+                            }
+
+                            # # ---------------------------------------------- 
+                            # def find_interval(value, intervals):
+                            #     """
+                            #     Finds the interval that contains the given value.
+
+                            #     Parameters:
+                            #         value (int): The age value to be mapped.
+                            #         intervals (list): A list of interval strings like '20-30'.
+
+                            #     Returns:
+                            #         str: The corresponding interval as a string.
+                            #     """
+                            #     for interval in intervals:
+                            #         lower, upper = map(int, interval.split('-'))  # Extract lower and upper bounds
+                            #         if lower <= value <= upper:
+                            #             return interval  # Return the matching interval
+                            #     return "Unknown"  # If no interval matches, return 'Unknown'
+                            # # ----------------------------------------------
+
+                            # max_hierarchy_level = len(column_hierarchy)#len(column_hierarchy[list(column_hierarchy.keys())[0]]) #2 
+                            # # Create masked versions for each level up to mask_level
+                            # for lvl in range(1, max_hierarchy_level):
+                            # # for lvl in range(1, mask_level + 1):
+                            
+                            #     # Get the appropriate hierarchy level
+                            #     hierarchy_level = min(lvl, max_hierarchy_level)  # Ensure we don't exceed available levels
+                                
+                            #     # Map values through hierarchy
+                            #     hierarchy_dict[lvl] = df[col].apply(lambda x: find_interval(x, column_hierarchy[hierarchy_level])).values
+
+                            #     # hierarchy_dict[lvl] = df[col].map(
+                            #     #     lambda x: column_hierarchy.get(x, ["Unknown"] * (max_hierarchy_level + 1))[hierarchy_level]
+                            #     # ).values
+                            
+                            # hierarchies[col] = hierarchy_dict
+
+                        if col == 'sex':
+                           
+                            # try:
+                            #     mask_level = 2 #int(chosen_level)
+                            # except:
+                            #     mask_level = 0  # Default to most specific level
+
+                            # Initialize hierarchy dictionary
+                            hierarchy_dict = {0: df[col].values}  # Level 0 is original data
+
+                            # Load hierarchy mappings for this column (pre-load this outside the loop in reality)
+                            # For this example, we'll assume you have a pre-loaded hierarchy dictionary:
+                                
+                            column_hierarchy = {
+                                'Male': ['Male', 'Human'], 
+                                'Female': ['Female', 'Human']
+                            }
+                            max_hierarchy_level = len(column_hierarchy[list(column_hierarchy.keys())[0]]) #2 
+                            # Create masked versions for each level up to mask_level
+                            for lvl in range(1, max_hierarchy_level):
+                            # for lvl in range(1, mask_level + 1):
+                            
+                                # Get the appropriate hierarchy level
+                                hierarchy_level = min(lvl, max_hierarchy_level)  # Ensure we don't exceed available levels
+                                
+                                # Map values through hierarchy
+                                hierarchy_dict[lvl] = df[col].map(
+                                    lambda x: column_hierarchy.get(x, ["Unknown"] * (max_hierarchy_level + 1))[hierarchy_level]
+                                ).values
+
+                            hierarchies[col] = hierarchy_dict
+                        
+                        if col == 'race':
+                           
+                            # try:
+                            #     mask_level = 2 #int(chosen_level)
+                            # except:
+                            #     mask_level = 0  # Default to most specific level
+
+                            # Initialize hierarchy dictionary
+                            hierarchy_dict = {0: df[col].values}  # Level 0 is original data
+
+                            # Load hierarchy mappings for this column (pre-load this outside the loop in reality)
+                            # For this example, we'll assume you have a pre-loaded hierarchy dictionary:
+                                
+                            column_hierarchy = {
+                                'White': ['White', 'White', 'Race'], 
+                                'Black': ['Black', 'Black', 'Race'], 
+                                'Asian-Pac': ['Asian-Pac', 'Asian/Pac', 'Race'], 
+                                'Amer-India': ['Amer-India', 'Native Am', 'Race'], 
+                                'Other': ['Other', 'Other', 'Race']
+                            }
+                            max_hierarchy_level = len(column_hierarchy[list(column_hierarchy.keys())[0]]) #2 
+                            # Create masked versions for each level up to mask_level
+                            for lvl in range(1, max_hierarchy_level):
+                            # for lvl in range(1, mask_level + 1):
+                            
+                                # Get the appropriate hierarchy level
+                                hierarchy_level = min(lvl, max_hierarchy_level)  # Ensure we don't exceed available levels
+                                
+                                # Map values through hierarchy
+                                hierarchy_dict[lvl] = df[col].map(
+                                    lambda x: column_hierarchy.get(x, ["Unknown"] * (max_hierarchy_level + 1))[hierarchy_level]
+                                ).values
+
+                            hierarchies[col] = hierarchy_dict
+
                         if col == 'relationship':
                            
                             # try:
@@ -347,7 +463,7 @@ def select_columns():
 
                             hierarchies[col] = hierarchy_dict
 
-                        if col == 'Education': #'education'
+                        if col == 'education': #'education'
                             # location_hierarchy = {
                             #     "Sault Ste. Marie, ON, P6A": ["Sault Ste. Marie, ON, P6A", "Ontario", "Canada"],
                             #     "Toronto, ON, M5A": ["Toronto, ON, M5A", "Ontario", "Canada"],
@@ -388,7 +504,7 @@ def select_columns():
                                 "1st-4th": ["1st-4th", "School", "Study"],
                                 "Preschool": ["Preschool", "Preschool", "Study"],
                                 "12th": ["12th", "School", "Study"],
-                                "Bacherlors": ["Bacherlors", "Bacherlors", "Study"],
+                                "Bachelors": ["Bachelors", "Bachelors", "Study"],
                             }
                             max_hierarchy_level = len(column_hierarchy[list(column_hierarchy.keys())[0]]) #2 
                             # Create masked versions for each level up to mask_level
@@ -423,6 +539,7 @@ def select_columns():
                     hierarchies=hierarchies
                 )
             else:
+                print(df.shape)
                 anonymized_df = anonymity.k_anonymity(
                     data=df,
                     ident=ident,
@@ -439,7 +556,7 @@ def select_columns():
         processed_filepath = os.path.join(PROCESSED_FOLDER, processed_filename)
         anonymized_df.to_csv(processed_filepath, index=False)
         
-        preview_html = anonymized_df.head(10).to_html(classes="table table-striped", index=False)
+        preview_html = anonymized_df.head(100).to_html(classes="table table-striped", index=False)
         return render_template('preview.html', anonymized_table=preview_html, download_filename=processed_filename)
     
     return render_template(
