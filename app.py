@@ -158,11 +158,11 @@ def select_columns():
                 chosen_type = request.form.get(hier_type_field, "none")
                 chosen_level = request.form.get(hier_level_field, "none")
                 
-                if chosen_type == "none":
-                    hierarchies[col] = {0: df[col].values}
-                    continue
+                # if chosen_type == "none":
+                #     hierarchies[col] = {0: df[col].values}
+                #     continue
                 
-                if col_types[col] == "string":
+                if False: #col_types[col] == "string":
                     # For string columns: if masking is chosen, build levels 0..mask_level
                     if chosen_type == "masking":
                         try:
@@ -212,6 +212,124 @@ def select_columns():
                             0: df[col].values,
                             1: generate_intervals(df[col].values, interval_val)
                         }
+                    elif chosen_type == 'default':
+                    
+                        if col == 'Education':
+                            # location_hierarchy = {
+                            #     "Sault Ste. Marie, ON, P6A": ["Sault Ste. Marie, ON, P6A", "Ontario", "Canada"],
+                            #     "Toronto, ON, M5A": ["Toronto, ON, M5A", "Ontario", "Canada"],
+                            #     "Montreal, QC, H2A": ["Montreal, QC, H2A", "Quebec", "Canada"],
+                            # }
+                            # Assuming 'hierarchy_df' is a DataFrame loaded from your CSV with columns:
+                            # Level0 | Level1 | Level2 (and possibly more levels)
+                            # Example:
+                            # Level0        | Level1    | Level2
+                            # ------------------------------------
+                            # Bachelors     | Bachelors | Study
+                            # HS-grad       | School    | Study
+                            # ...etc
+
+                            # try:
+                            #     mask_level = 2 #int(chosen_level)
+                            # except:
+                            #     mask_level = 0  # Default to most specific level
+
+                            # Initialize hierarchy dictionary
+                            hierarchy_dict = {0: df[col].values}  # Level 0 is original data
+
+                            # Load hierarchy mappings for this column (pre-load this outside the loop in reality)
+                            # For this example, we'll assume you have a pre-loaded hierarchy dictionary:
+                            column_hierarchy = {
+                                "HS-grad": ["HS-grad", "School", "Study"],
+                                "11th": ["11th", "School", "Study"],
+                                "Masters": ["Masters", "Masters", "Study"],
+                                "9th": ["9th", "School", "Study"],
+                                "Some-college": ["Some-college", "School", "Study"],
+                                "Assoc-acdm": ["Assoc-acdm", "School", "Study"],
+                                "Assoc-voc": ["Assoc-voc", "School", "Study"],
+                                "7th-8th": ["7th-8th", "School", "Study"],
+                                "Doctorate": ["Doctorate", "Doctorate", "Study"],
+                                "Prof-school": ["Prof-school", "School", "Study"],
+                                "5th-6th": ["5th-6th", "School", "Study"],
+                                "10th": ["10th", "School", "Study"],
+                                "1st-4th": ["1st-4th", "School", "Study"],
+                                "Preschool": ["Preschool", "Preschool", "Study"],
+                                "12th": ["12th", "School", "Study"],
+                                "Bacherlors": ["Bacherlors", "Bacherlors", "Study"],
+                            }
+                            max_hierarchy_level = len(column_hierarchy[list(column_hierarchy.keys())[0]]) #2 
+                            # Create masked versions for each level up to mask_level
+                            for lvl in range(1, max_hierarchy_level):
+                            # for lvl in range(1, mask_level + 1):
+                            
+                                # Get the appropriate hierarchy level
+                                hierarchy_level = min(lvl, max_hierarchy_level)  # Ensure we don't exceed available levels
+                                
+                                # Map values through hierarchy
+                                hierarchy_dict[lvl] = df[col].map(
+                                    lambda x: column_hierarchy.get(x, ["Unknown"] * (max_hierarchy_level + 1))[hierarchy_level]
+                                ).values
+
+                            hierarchies[col] = hierarchy_dict
+
+                        if col == 'Education':
+                            # location_hierarchy = {
+                            #     "Sault Ste. Marie, ON, P6A": ["Sault Ste. Marie, ON, P6A", "Ontario", "Canada"],
+                            #     "Toronto, ON, M5A": ["Toronto, ON, M5A", "Ontario", "Canada"],
+                            #     "Montreal, QC, H2A": ["Montreal, QC, H2A", "Quebec", "Canada"],
+                            # }
+                            # Assuming 'hierarchy_df' is a DataFrame loaded from your CSV with columns:
+                            # Level0 | Level1 | Level2 (and possibly more levels)
+                            # Example:
+                            # Level0        | Level1    | Level2
+                            # ------------------------------------
+                            # Bachelors     | Bachelors | Study
+                            # HS-grad       | School    | Study
+                            # ...etc
+
+                            # try:
+                            #     mask_level = 2 #int(chosen_level)
+                            # except:
+                            #     mask_level = 0  # Default to most specific level
+
+                            # Initialize hierarchy dictionary
+                            hierarchy_dict = {0: df[col].values}  # Level 0 is original data
+
+                            # Load hierarchy mappings for this column (pre-load this outside the loop in reality)
+                            # For this example, we'll assume you have a pre-loaded hierarchy dictionary:
+                            column_hierarchy = {
+                                "HS-grad": ["HS-grad", "School", "Study"],
+                                "11th": ["11th", "School", "Study"],
+                                "Masters": ["Masters", "Masters", "Study"],
+                                "9th": ["9th", "School", "Study"],
+                                "Some-college": ["Some-college", "School", "Study"],
+                                "Assoc-acdm": ["Assoc-acdm", "School", "Study"],
+                                "Assoc-voc": ["Assoc-voc", "School", "Study"],
+                                "7th-8th": ["7th-8th", "School", "Study"],
+                                "Doctorate": ["Doctorate", "Doctorate", "Study"],
+                                "Prof-school": ["Prof-school", "School", "Study"],
+                                "5th-6th": ["5th-6th", "School", "Study"],
+                                "10th": ["10th", "School", "Study"],
+                                "1st-4th": ["1st-4th", "School", "Study"],
+                                "Preschool": ["Preschool", "Preschool", "Study"],
+                                "12th": ["12th", "School", "Study"],
+                                "Bacherlors": ["Bacherlors", "Bacherlors", "Study"],
+                            }
+                            max_hierarchy_level = len(column_hierarchy[list(column_hierarchy.keys())[0]]) #2 
+                            # Create masked versions for each level up to mask_level
+                            for lvl in range(1, max_hierarchy_level):
+                            # for lvl in range(1, mask_level + 1):
+
+                                # Get the appropriate hierarchy level
+                                hierarchy_level = min(lvl, max_hierarchy_level)  # Ensure we don't exceed available levels
+                                
+                                # Map values through hierarchy
+                                hierarchy_dict[lvl] = df[col].map(
+                                    lambda x: column_hierarchy.get(x, ["Unknown"] * (max_hierarchy_level + 1))[hierarchy_level]
+                                ).values
+
+                            hierarchies[col] = hierarchy_dict
+
         
         # Run the chosen anonymization
         try:
