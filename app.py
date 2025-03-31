@@ -165,7 +165,7 @@ def select_columns():
         ident = [col for col, r in roles.items() if r == 'ident']
         sens_att_list = [col for col, r in roles.items() if r == 'sensitive']
         
-        # Build dynamic hierarchies based on user input.
+                # Build dynamic hierarchies based on user input.
         hierarchies = {}
         for i, col in enumerate(columns):
             if col in roles and roles[col] in ['quasi', 'sensitive']:
@@ -174,12 +174,7 @@ def select_columns():
                 chosen_type = request.form.get(hier_type_field, "none")
                 chosen_level = request.form.get(hier_level_field, "none")
                 
-                # if chosen_type == "none":
-                #     hierarchies[col] = {0: df[col].values}
-                #     continue
-                
-                if False: #col_types[col] == "string":
-                    # For string columns: if masking is chosen, build levels 0..mask_level
+                if col_types[col] == "string":
                     if chosen_type == "masking":
                         try:
                             mask_level = int(chosen_level)
@@ -198,11 +193,35 @@ def select_columns():
                             interval_val = 10
                         if interval_val <= 0:
                             interval_val = 10
-                        # For strings, interval is less meaningful – we use a simple suppression alternative.
+                        # For strings, interval is less meaningful – using a simple suppression alternative.
                         hierarchies[col] = {
                             0: df[col].values,
                             1: np.array(["*"] * len(df[col].values))
                         }
+                    elif chosen_type == "custom":
+                        custom_text = request.form.get(f"custom_hier_{i}")
+                        if custom_text:
+                            custom_map = {}
+                            lines = custom_text.splitlines()
+                            for line in lines:
+                                if line.strip():
+                                    parts = [p.strip() for p in line.split(',')]
+                                    if len(parts) > 1:
+                                        custom_map[parts[0]] = parts
+                            if custom_map:
+                                max_level = max(len(v) for v in custom_map.values()) - 1
+                            else:
+                                max_level = 0
+                            hierarchy_dict = {0: df[col].values}
+                            for lvl in range(1, max_level + 1):
+                                hierarchy_dict[lvl] = df[col].astype(str).apply(
+                                    lambda x, lvl=lvl: custom_map[x][lvl] if x in custom_map and len(custom_map[x]) > lvl else " not able to map"
+                                ).values
+                            hierarchies[col] = hierarchy_dict
+                        else:
+                            hierarchies[col] = {0: df[col].values}
+                    else:
+                        hierarchies[col] = {0: df[col].values}
                 else:
                     # For numeric columns:
                     if chosen_type == "masking":
@@ -229,11 +248,7 @@ def select_columns():
                             1: generate_intervals(df[col].values, interval_val)
                         }
                     elif chosen_type == 'default':
-
                         if col == 'age':
-
-                            # hierarchy_dict = {0: df[col].values}                        
-                            # column_hierarchy = {
                             hierarchies[col] = {
                                 0: df["age"].values,
                                 1: utils.generate_intervals(df["age"].values, 0, 100, 3),
@@ -242,88 +257,20 @@ def select_columns():
                                 4: utils.generate_intervals(df["age"].values, 0, 100, 20),
                                 5: utils.generate_intervals(df["age"].values, 0, 100, 50),
                             }
-
-                            # # ---------------------------------------------- 
-                            # def find_interval(value, intervals):
-                            #     """
-                            #     Finds the interval that contains the given value.
-
-                            #     Parameters:
-                            #         value (int): The age value to be mapped.
-                            #         intervals (list): A list of interval strings like '20-30'.
-
-                            #     Returns:
-                            #         str: The corresponding interval as a string.
-                            #     """
-                            #     for interval in intervals:
-                            #         lower, upper = map(int, interval.split('-'))  # Extract lower and upper bounds
-                            #         if lower <= value <= upper:
-                            #             return interval  # Return the matching interval
-                            #     return "Unknown"  # If no interval matches, return 'Unknown'
-                            # # ----------------------------------------------
-
-                            # max_hierarchy_level = len(column_hierarchy)#len(column_hierarchy[list(column_hierarchy.keys())[0]]) #2 
-                            # # Create masked versions for each level up to mask_level
-                            # for lvl in range(1, max_hierarchy_level):
-                            # # for lvl in range(1, mask_level + 1):
-                            
-                            #     # Get the appropriate hierarchy level
-                            #     hierarchy_level = min(lvl, max_hierarchy_level)  # Ensure we don't exceed available levels
-                                
-                            #     # Map values through hierarchy
-                            #     hierarchy_dict[lvl] = df[col].apply(lambda x: find_interval(x, column_hierarchy[hierarchy_level])).values
-
-                            #     # hierarchy_dict[lvl] = df[col].map(
-                            #     #     lambda x: column_hierarchy.get(x, ["Unknown"] * (max_hierarchy_level + 1))[hierarchy_level]
-                            #     # ).values
-                            
-                            # hierarchies[col] = hierarchy_dict
-
                         if col == 'sex':
-                           
-                            # try:
-                            #     mask_level = 2 #int(chosen_level)
-                            # except:
-                            #     mask_level = 0  # Default to most specific level
-
-                            # Initialize hierarchy dictionary
-                            hierarchy_dict = {0: df[col].values}  # Level 0 is original data
-
-                            # Load hierarchy mappings for this column (pre-load this outside the loop in reality)
-                            # For this example, we'll assume you have a pre-loaded hierarchy dictionary:
-                                
+                            hierarchy_dict = {0: df[col].values}
                             column_hierarchy = {
                                 'Male': ['Male', 'Human'], 
                                 'Female': ['Female', 'Human']
                             }
-                            max_hierarchy_level = len(column_hierarchy[list(column_hierarchy.keys())[0]]) #2 
-                            # Create masked versions for each level up to mask_level
+                            max_hierarchy_level = len(next(iter(column_hierarchy.values())))
                             for lvl in range(1, max_hierarchy_level):
-                            # for lvl in range(1, mask_level + 1):
-                            
-                                # Get the appropriate hierarchy level
-                                hierarchy_level = min(lvl, max_hierarchy_level)  # Ensure we don't exceed available levels
-                                
-                                # Map values through hierarchy
                                 hierarchy_dict[lvl] = df[col].map(
-                                    lambda x: column_hierarchy.get(x, ["Unknown"] * (max_hierarchy_level + 1))[hierarchy_level]
+                                    lambda x, lvl=lvl: column_hierarchy.get(x, [" not able to map"] * max_hierarchy_level)[lvl]
                                 ).values
-
                             hierarchies[col] = hierarchy_dict
-                        
                         if col == 'race':
-                           
-                            # try:
-                            #     mask_level = 2 #int(chosen_level)
-                            # except:
-                            #     mask_level = 0  # Default to most specific level
-
-                            # Initialize hierarchy dictionary
-                            hierarchy_dict = {0: df[col].values}  # Level 0 is original data
-
-                            # Load hierarchy mappings for this column (pre-load this outside the loop in reality)
-                            # For this example, we'll assume you have a pre-loaded hierarchy dictionary:
-                                
+                            hierarchy_dict = {0: df[col].values}
                             column_hierarchy = {
                                 'White': ['White', 'White', 'Race'], 
                                 'Black': ['Black', 'Black', 'Race'], 
@@ -331,34 +278,14 @@ def select_columns():
                                 'Amer-India': ['Amer-India', 'Native Am', 'Race'], 
                                 'Other': ['Other', 'Other', 'Race']
                             }
-                            max_hierarchy_level = len(column_hierarchy[list(column_hierarchy.keys())[0]]) #2 
-                            # Create masked versions for each level up to mask_level
+                            max_hierarchy_level = len(next(iter(column_hierarchy.values())))
                             for lvl in range(1, max_hierarchy_level):
-                            # for lvl in range(1, mask_level + 1):
-                            
-                                # Get the appropriate hierarchy level
-                                hierarchy_level = min(lvl, max_hierarchy_level)  # Ensure we don't exceed available levels
-                                
-                                # Map values through hierarchy
                                 hierarchy_dict[lvl] = df[col].map(
-                                    lambda x: column_hierarchy.get(x, ["Unknown"] * (max_hierarchy_level + 1))[hierarchy_level]
+                                    lambda x, lvl=lvl: column_hierarchy.get(x, [" not able to map"] * max_hierarchy_level)[lvl]
                                 ).values
-
                             hierarchies[col] = hierarchy_dict
-
                         if col == 'relationship':
-                           
-                            # try:
-                            #     mask_level = 2 #int(chosen_level)
-                            # except:
-                            #     mask_level = 0  # Default to most specific level
-
-                            # Initialize hierarchy dictionary
-                            hierarchy_dict = {0: df[col].values}  # Level 0 is original data
-
-                            # Load hierarchy mappings for this column (pre-load this outside the loop in reality)
-                            # For this example, we'll assume you have a pre-loaded hierarchy dictionary:
-                                
+                            hierarchy_dict = {0: df[col].values}
                             column_hierarchy = {
                                 'Not-in-family': ['Not-in-family', 'Not Family', 'Relationship'], 
                                 'Husband': ['Husband', 'Spouse', 'Relationship'], 
@@ -366,35 +293,15 @@ def select_columns():
                                 'Own-child': ['Own-child', 'Child', 'Relationship'], 
                                 'Unmarried': ['Unmarried', 'Not Family', 'Relationship'], 
                                 'Other-relative': ['Other-relative', 'Other Rela', 'Relationship']
-                                }
-                            max_hierarchy_level = len(column_hierarchy[list(column_hierarchy.keys())[0]]) #2 
-                            # Create masked versions for each level up to mask_level
+                            }
+                            max_hierarchy_level = len(next(iter(column_hierarchy.values())))
                             for lvl in range(1, max_hierarchy_level):
-                            # for lvl in range(1, mask_level + 1):
-                            
-                                # Get the appropriate hierarchy level
-                                hierarchy_level = min(lvl, max_hierarchy_level)  # Ensure we don't exceed available levels
-                                
-                                # Map values through hierarchy
                                 hierarchy_dict[lvl] = df[col].map(
-                                    lambda x: column_hierarchy.get(x, ["Unknown"] * (max_hierarchy_level + 1))[hierarchy_level]
+                                    lambda x, lvl=lvl: column_hierarchy.get(x, [" not able to map"] * max_hierarchy_level)[lvl]
                                 ).values
-
                             hierarchies[col] = hierarchy_dict
-
                         if col == 'occupation':
-                           
-                            # try:
-                            #     mask_level = 2 #int(chosen_level)
-                            # except:
-                            #     mask_level = 0  # Default to most specific level
-
-                            # Initialize hierarchy dictionary
-                            hierarchy_dict = {0: df[col].values}  # Level 0 is original data
-
-                            # Load hierarchy mappings for this column (pre-load this outside the loop in reality)
-                            # For this example, we'll assume you have a pre-loaded hierarchy dictionary:
-                                
+                            hierarchy_dict = {0: df[col].values}
                             column_hierarchy = {
                                 'Adm-cleric': ['Adm-cleric', 'Clerical/Admin', 'Office/Admin', 'Office/Management', 'Occupation'], 
                                 'Exec-managerial': ['Exec-managerial', 'Executive/Managerial', 'Management/Sales', 'Office/Management', 'Occupation'], 
@@ -411,34 +318,15 @@ def select_columns():
                                 'Protective-serv': ['Protective-serv', 'Protective Services', 'Protective', 'Professional/Specialized', 'Occupation'], 
                                 'Armed-Forces': ['Armed-Forces', 'Armed Forces', 'Military', 'Other/Unknown', 'Occupation'], 
                                 'Priv-house-serv': ['Priv-house-serv', 'Private Household', 'Service', 'General Labor/Service', 'Occupation']
-                                }
-                            max_hierarchy_level = len(column_hierarchy[list(column_hierarchy.keys())[0]]) #2 
-                            # Create masked versions for each level up to mask_level
+                            }
+                            max_hierarchy_level = len(next(iter(column_hierarchy.values())))
                             for lvl in range(1, max_hierarchy_level):
-                            # for lvl in range(1, mask_level + 1):
-                            
-                                # Get the appropriate hierarchy level
-                                hierarchy_level = min(lvl, max_hierarchy_level)  # Ensure we don't exceed available levels
-                                
-                                # Map values through hierarchy
                                 hierarchy_dict[lvl] = df[col].map(
-                                    lambda x: column_hierarchy.get(x, ["Unknown"] * (max_hierarchy_level + 1))[hierarchy_level]
+                                    lambda x, lvl=lvl: column_hierarchy.get(x, [" not able to map"] * max_hierarchy_level)[lvl]
                                 ).values
-
                             hierarchies[col] = hierarchy_dict
-                    
                         if col == 'marital-status':
-                           
-                            # try:
-                            #     mask_level = 2 #int(chosen_level)
-                            # except:
-                            #     mask_level = 0  # Default to most specific level
-
-                            # Initialize hierarchy dictionary
-                            hierarchy_dict = {0: df[col].values}  # Level 0 is original data
-
-                            # Load hierarchy mappings for this column (pre-load this outside the loop in reality)
-                            # For this example, we'll assume you have a pre-loaded hierarchy dictionary:
+                            hierarchy_dict = {0: df[col].values}
                             column_hierarchy = {
                                 'Never-married': ['Never-married', 'Unmarried', 'marital-status'],
                                 'Married-civ-spouse': ['Married-civ-spouse', 'Married', 'marital-status'],
@@ -448,46 +336,14 @@ def select_columns():
                                 'Married-AF-spouse': ['Married-AF-spouse', 'Married', 'marital-status'], 
                                 'Widowed': ['Widowed', 'Unmarried', 'marital-status']
                             }
-                            max_hierarchy_level = len(column_hierarchy[list(column_hierarchy.keys())[0]]) #2 
-                            # Create masked versions for each level up to mask_level
+                            max_hierarchy_level = len(next(iter(column_hierarchy.values())))
                             for lvl in range(1, max_hierarchy_level):
-                            # for lvl in range(1, mask_level + 1):
-                            
-                                # Get the appropriate hierarchy level
-                                hierarchy_level = min(lvl, max_hierarchy_level)  # Ensure we don't exceed available levels
-                                
-                                # Map values through hierarchy
                                 hierarchy_dict[lvl] = df[col].map(
-                                    lambda x: column_hierarchy.get(x, ["Unknown"] * (max_hierarchy_level + 1))[hierarchy_level]
+                                    lambda x, lvl=lvl: column_hierarchy.get(x, [" not able to map"] * max_hierarchy_level)[lvl]
                                 ).values
-
                             hierarchies[col] = hierarchy_dict
-
-                        if col == 'education': #'education'
-                            # location_hierarchy = {
-                            #     "Sault Ste. Marie, ON, P6A": ["Sault Ste. Marie, ON, P6A", "Ontario", "Canada"],
-                            #     "Toronto, ON, M5A": ["Toronto, ON, M5A", "Ontario", "Canada"],
-                            #     "Montreal, QC, H2A": ["Montreal, QC, H2A", "Quebec", "Canada"],
-                            # }
-                            # Assuming 'hierarchy_df' is a DataFrame loaded from your CSV with columns:
-                            # Level0 | Level1 | Level2 (and possibly more levels)
-                            # Example:
-                            # Level0        | Level1    | Level2
-                            # ------------------------------------
-                            # Bachelors     | Bachelors | Study
-                            # HS-grad       | School    | Study
-                            # ...etc
-
-                            # try:
-                            #     mask_level = 2 #int(chosen_level)
-                            # except:
-                            #     mask_level = 0  # Default to most specific level
-
-                            # Initialize hierarchy dictionary
-                            hierarchy_dict = {0: df[col].values}  # Level 0 is original data
-
-                            # Load hierarchy mappings for this column (pre-load this outside the loop in reality)
-                            # For this example, we'll assume you have a pre-loaded hierarchy dictionary:
+                        if col == 'education':
+                            hierarchy_dict = {0: df[col].values}
                             column_hierarchy = {
                                 "HS-grad": ["HS-grad", "School", "Study"],
                                 "11th": ["11th", "School", "Study"],
@@ -506,20 +362,15 @@ def select_columns():
                                 "12th": ["12th", "School", "Study"],
                                 "Bachelors": ["Bachelors", "Bachelors", "Study"],
                             }
-                            max_hierarchy_level = len(column_hierarchy[list(column_hierarchy.keys())[0]]) #2 
-                            # Create masked versions for each level up to mask_level
+                            max_hierarchy_level = len(next(iter(column_hierarchy.values())))
                             for lvl in range(1, max_hierarchy_level):
-                            # for lvl in range(1, mask_level + 1):
-
-                                # Get the appropriate hierarchy level
-                                hierarchy_level = min(lvl, max_hierarchy_level)  # Ensure we don't exceed available levels
-                                
-                                # Map values through hierarchy
                                 hierarchy_dict[lvl] = df[col].map(
-                                    lambda x: column_hierarchy.get(x, ["Unknown"] * (max_hierarchy_level + 1))[hierarchy_level]
+                                    lambda x, lvl=lvl: column_hierarchy.get(x, [" not able to map"] * max_hierarchy_level)[lvl]
                                 ).values
-
                             hierarchies[col] = hierarchy_dict
+                    else:
+                        hierarchies[col] = {0: df[col].values}
+
 
         
         # Run the chosen anonymization

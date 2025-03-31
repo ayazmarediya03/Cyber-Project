@@ -165,6 +165,33 @@
                 </div>
             </div>
 
+            <!-- Custom Hierarchy Modals moved inside the form -->
+            {% for col in columns %}
+            <div class="modal fade" id="customHierarchyModal{{ loop.index0 }}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Custom Hierarchy for {{ col }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="mb-3">
+                      <label class="form-label">Enter hierarchy levels (one value per line, comma-separated levels):</label>
+                      <textarea class="form-control" rows="5" 
+                                name="custom_hier_{{ loop.index0 }}"
+                                placeholder="Male,Human&#10;Female,Human"></textarea>
+                      <small class="text-muted">Example:<br>Male,Human<br>Female,Human</small>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Save</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+
             <div class="d-flex justify-content-end mb-4">
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-gear-wide-connected me-2"></i>Process Data
@@ -172,33 +199,6 @@
             </div>
         </form>
     </div>
-
-    <!-- Custom Hierarchy Modals -->
-    {% for col in columns %}
-    <div class="modal fade" id="customHierarchyModal{{ loop.index0 }}" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Custom Hierarchy for {{ col }}</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label">Enter hierarchy levels (one value per line, comma-separated levels):</label>
-              <textarea class="form-control" rows="5" 
-                        name="custom_hier_{{ loop.index0 }}"
-                        placeholder="OriginalValue,Level1,Level2&#10;Value2,Level1,Level2"></textarea>
-              <small class="text-muted">Example:<br>HS-grad,Secondary,Education<br>Bachelors,University,Education</small>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Save</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endfor %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
