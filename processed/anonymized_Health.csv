@@ -1,1 +1,10 @@
-
+Name,age,ZIP,Disease,Education,Location,Decimal,credit
+*,"[20, 40)",476**,Heart Disease,school,"Sault Ste. Marie, ON, P6A",1******,14*****************
+*,"[20, 40)",476**,Heart Disease,school,"Sault Ste. Marie, ON, P6A",1******,14*****************
+*,"[20, 40)",476**,Heart Disease,school,"Sault Ste. Marie, ON, P6A",1******,14*****************
+*,"[40, 60)",479**,Flu,Bacherlors,"Toronto, ON, M5A",1******,14*****************
+*,"[40, 60)",479**,Heart Disease,Bacherlors,"Toronto, ON, M5A",1******,14*****************
+*,"[40, 60)",479**,Cancer,Bacherlors,"Sault Ste. Marie, ON, P6A",1******,14*****************
+*,"[20, 40)",476**,Heart Disease,Masters,"Sault Ste. Marie, ON, P6A",1******,14*****************
+*,"[20, 40)",476**,Cancer,Masters,"Toronto, ON, M5A",1******,14*****************
+*,"[20, 40)",476**,Cancer,Masters,"Montreal, QC, H2A",1******,14*****************

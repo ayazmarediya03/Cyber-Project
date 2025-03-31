@@ -156,7 +156,7 @@
                                                 class="form-select hierarchy-type">
                                             <option value="none">None</option>
                                             <option value="masking">Masking</option>
-                                            <option value="interval">Interval Grouping</option>
+                                            <!-- <option value="interval">Interval Grouping</option> -->
                                             <option value="default">Default Hierarchy</option>
                                             <option value="custom">Custom Hierarchy</option>
                                         </select>
@@ -248,11 +248,13 @@
             
             if (typeSelect.value === "masking") {
                 // Masking options
-                const maxMask = Math.min(maxLen, 5);
-                for (let i = 0; i <= maxMask; i++) {
-                    const opt = new Option(`Mask last ${i} ${i === 1 ? 'char' : 'chars'}`, i);
-                    levelSelect.add(opt);
-                }
+                // const maxMask = Math.min(maxLen, 5);
+                // for (let i = 0; i <= maxMask; i++) {
+                //     const opt = new Option(`Mask last ${i} ${i === 1 ? 'char' : 'chars'}`, i);
+                //     levelSelect.add(opt);
+                // }
+                const opt = new Option("Masking", "masking");
+                levelSelect.add(opt);
             } 
             else if (typeSelect.value === "interval") {
                 // Smart interval options based on column name and type

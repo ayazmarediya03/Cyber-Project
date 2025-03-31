@@ -174,7 +174,7 @@ def select_columns():
                 chosen_type = request.form.get(hier_type_field, "none")
                 chosen_level = request.form.get(hier_level_field, "none")
                 
-                if col_types[col] == "string":
+                if False:#col_types[col] == "string":
                     if chosen_type == "masking":
                         try:
                             mask_level = int(chosen_level)
@@ -223,31 +223,72 @@ def select_columns():
                     else:
                         hierarchies[col] = {0: df[col].values}
                 else:
-                    # For numeric columns:
+                    # For numeric columns:                    
                     if chosen_type == "masking":
+
+                        df[col] = df[col].astype(str)
+                        df[col] = df[col].str.strip()
+                        length = df[col].str.len()
+                        if length.nunique() != 1:
+                            # print('Masking can be done as all the values are of same size')
+                            flash('All values of the attritube needs to be of same size in order to do masking')
+                            return redirect(url_for('select_columns', filename=filename))
+                        # else:
+                        #     flash('All values needs to be same size')
+                        #     return redirect(url_for('select_columns', filename=filename))
+
+                        # convert it to string compulsory
                         try:
-                            mask_level = int(chosen_level)
+                            mask_level = len(df[col][0]) #int(chosen_level)
                         except:
                             mask_level = 0
                         hierarchy_dict = {0: df[col].values}
                         for lvl in range(1, mask_level + 1):
                             def mask_num(n, lvl=lvl):
-                                s = str(int(n))
+                                # if isinstance(n,str):
+                                #     s = n 
+                                # else: #for decimal
+                                #     s = str(int(n))
+                                s = n
                                 return s[:-lvl] + ("*" * lvl) if len(s) > lvl else "*" * lvl
                             hierarchy_dict[lvl] = df[col].astype(str).apply(mask_num).values
                         hierarchies[col] = hierarchy_dict
-                    elif chosen_type == "interval":
-                        try:
-                            interval_val = int(chosen_level)
-                        except:
-                            interval_val = 10
-                        if interval_val <= 0:
-                            interval_val = 10
-                        hierarchies[col] = {
-                            0: df[col].values,
-                            1: generate_intervals(df[col].values, interval_val)
-                        }
+                    # elif chosen_type == "interval":
+                    #     try:
+                    #         interval_val = int(chosen_level)
+                    #     except:
+                    #         interval_val = 10
+                    #     if interval_val <= 0:
+                    #         interval_val = 10
+                    #     hierarchies[col] = {
+                    #         0: df[col].values,
+                    #         1: generate_intervals(df[col].values, interval_val)
+                    #     }
+                    elif chosen_type == "custom":
+                        custom_text = request.form.get(f"custom_hier_{i}")
+                        if custom_text:
+                            custom_map = {}
+                            lines = custom_text.splitlines()
+                            for line in lines:
+                                if line.strip():
+                                    parts = [p.strip() for p in line.split(',')]
+                                    if len(parts) > 1:
+                                        custom_map[parts[0]] = parts
+                            if custom_map:
+                                max_level = max(len(v) for v in custom_map.values()) - 1
+                            else:
+                                max_level = 0
+                            hierarchy_dict = {0: df[col].values}
+                            for lvl in range(1, max_level + 1):
+                                hierarchy_dict[lvl] = df[col].astype(str).apply(
+                                    lambda x, lvl=lvl: custom_map[x][lvl] if x in custom_map and len(custom_map[x]) > lvl else " not able to map"
+                                ).values
+                            hierarchies[col] = hierarchy_dict
+                        else:
+                            hierarchies[col] = {0: df[col].values}
+
                     elif chosen_type == 'default':
+                        
                         if col == 'age':
                             hierarchies[col] = {
                                 0: df["age"].values,
@@ -257,6 +298,7 @@ def select_columns():
                                 4: utils.generate_intervals(df["age"].values, 0, 100, 20),
                                 5: utils.generate_intervals(df["age"].values, 0, 100, 50),
                             }
+                        
                         if col == 'sex':
                             hierarchy_dict = {0: df[col].values}
                             column_hierarchy = {
@@ -269,6 +311,7 @@ def select_columns():
                                     lambda x, lvl=lvl: column_hierarchy.get(x, [" not able to map"] * max_hierarchy_level)[lvl]
                                 ).values
                             hierarchies[col] = hierarchy_dict
+                        
                         if col == 'race':
                             hierarchy_dict = {0: df[col].values}
                             column_hierarchy = {
@@ -284,6 +327,7 @@ def select_columns():
                                     lambda x, lvl=lvl: column_hierarchy.get(x, [" not able to map"] * max_hierarchy_level)[lvl]
                                 ).values
                             hierarchies[col] = hierarchy_dict
+                        
                         if col == 'relationship':
                             hierarchy_dict = {0: df[col].values}
                             column_hierarchy = {
@@ -300,6 +344,7 @@ def select_columns():
                                     lambda x, lvl=lvl: column_hierarchy.get(x, [" not able to map"] * max_hierarchy_level)[lvl]
                                 ).values
                             hierarchies[col] = hierarchy_dict
+                        
                         if col == 'occupation':
                             hierarchy_dict = {0: df[col].values}
                             column_hierarchy = {
@@ -325,6 +370,7 @@ def select_columns():
                                     lambda x, lvl=lvl: column_hierarchy.get(x, [" not able to map"] * max_hierarchy_level)[lvl]
                                 ).values
                             hierarchies[col] = hierarchy_dict
+                        
                         if col == 'marital-status':
                             hierarchy_dict = {0: df[col].values}
                             column_hierarchy = {
@@ -342,6 +388,7 @@ def select_columns():
                                     lambda x, lvl=lvl: column_hierarchy.get(x, [" not able to map"] * max_hierarchy_level)[lvl]
                                 ).values
                             hierarchies[col] = hierarchy_dict
+                        
                         if col == 'education':
                             hierarchy_dict = {0: df[col].values}
                             column_hierarchy = {
@@ -368,9 +415,10 @@ def select_columns():
                                     lambda x, lvl=lvl: column_hierarchy.get(x, [" not able to map"] * max_hierarchy_level)[lvl]
                                 ).values
                             hierarchies[col] = hierarchy_dict
+                    
                     else:
                         hierarchies[col] = {0: df[col].values}
-
+                    
 
         
         # Run the chosen anonymization
