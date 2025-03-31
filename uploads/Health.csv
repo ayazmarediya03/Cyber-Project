@@ -1,4 +1,4 @@
-Name,Age,ZIP,Disease,Education,Location
+Name,age,ZIP,Disease,Education,Location
 Alice,29,47677,Heart Disease,12th,"Sault Ste. Marie, ON, P6A"
 Bob,22,47602,Heart Disease,10th,"Sault Ste. Marie, ON, P6A"
 Charly,27,47698,Heart Disease,10th,"Sault Ste. Marie, ON, P6A"
