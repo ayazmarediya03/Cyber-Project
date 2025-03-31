@@ -39,6 +39,9 @@
             padding: 15px;
             background-color: white;
         }
+        .back-btn {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -49,6 +52,11 @@
     </nav>
 
     <div class="container">
+        <!-- Back button -->
+        <a href="javascript:history.back()" class="btn btn-secondary back-btn">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+
         {% with messages = get_flashed_messages() %}
           {% if messages %}
             <div class="alert alert-dismissible alert-danger mb-4">
@@ -62,7 +70,9 @@
 
         <div class="card mb-4">
             <div class="card-header bg-white">
-                <h2 class="h5 mb-0"><i class="bi bi-table me-2"></i>Original Data Preview</h2>
+                <h2 class="h5 mb-0">
+                    <i class="bi bi-table me-2"></i>Original Data Preview
+                </h2>
             </div>
             <div class="card-body">
                 <div class="preview-card">
@@ -74,7 +84,9 @@
         <form method="post">
             <div class="card mb-4">
                 <div class="card-header bg-white">
-                    <h2 class="h5 mb-0"><i class="bi bi-gear me-2"></i>Anonymization Settings</h2>
+                    <h2 class="h5 mb-0">
+                        <i class="bi bi-gear me-2"></i>Anonymization Settings
+                    </h2>
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
@@ -109,7 +121,9 @@
 
             <div class="card mb-4">
                 <div class="card-header bg-white">
-                    <h2 class="h5 mb-0"><i class="bi bi-columns-gap me-2"></i>Column Configuration</h2>
+                    <h2 class="h5 mb-0">
+                        <i class="bi bi-columns-gap me-2"></i>Column Configuration
+                    </h2>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -176,11 +190,15 @@
                   </div>
                   <div class="modal-body">
                     <div class="mb-3">
-                      <label class="form-label">Enter hierarchy levels (one value per line, comma-separated levels):</label>
+                      <label class="form-label">
+                        Enter hierarchy levels (one value per line, comma-separated levels):
+                      </label>
                       <textarea class="form-control" rows="5" 
                                 name="custom_hier_{{ loop.index0 }}"
                                 placeholder="Male,Human&#10;Female,Human"></textarea>
-                      <small class="text-muted">Example:<br>Male,Human<br>Female,Human</small>
+                      <small class="text-muted">
+                        Example:<br>Male,Human<br>Female,Human
+                      </small>
                     </div>
                   </div>
                   <div class="modal-footer">

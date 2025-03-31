@@ -13,6 +13,9 @@
             border-radius: 8px;
             box-shadow: 0 0 15px rgba(0,0,0,0.1);
         }
+        .back-btn {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -23,8 +26,14 @@
     </nav>
 
     <div class="container">
+        <!-- Back button -->
+        <a href="javascript:history.back()" class="btn btn-secondary back-btn">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
         <div class="upload-container">
-            <h1 class="h3 mb-4 text-center"><i class="bi bi-file-earmark-arrow-up me-2"></i>Upload CSV File</h1>
+            <h1 class="h3 mb-4 text-center">
+                <i class="bi bi-file-earmark-arrow-up me-2"></i>Upload CSV File
+            </h1>
             
             {% with messages = get_flashed_messages() %}
               {% if messages %}

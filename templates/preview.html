@@ -9,6 +9,9 @@
             max-height: 500px;
             overflow-y: auto;
         }
+        .back-btn {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -20,19 +23,25 @@
 
     <div class="container">
         {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            <div class="alert alert-dismissible alert-danger mb-4">
-              {% for message in messages %}
-                <div>{{ message }}</div>
-              {% endfor %}
-              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-          {% endif %}
-        {% endwith %}
-
+        {% if messages %}
+          <div class="alert alert-dismissible alert-danger mb-4">
+            {% for message in messages %}
+              <div>{{ message }}</div>
+            {% endfor %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endif %}
+      {% endwith %}
+        <h1 class="mb-4">Anonymized Data Preview</h1>
+        <!-- Back button -->
+        <a href="javascript:history.back()" class="btn btn-secondary back-btn">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
         <div class="card mb-4">
             <div class="card-header">
-                <h2 class="h5 mb-0"><i class="bi bi-file-earmark-bar-graph me-2"></i>Anonymized Data Preview</h2>
+                <h2 class="h5 mb-0">
+                    <i class="bi bi-file-earmark-bar-graph me-2"></i>Anonymized Data Preview
+                </h2>
             </div>
             <div class="card-body preview-card">
                 {{ anonymized_table|safe }}
