@@ -38,7 +38,7 @@ python app.py
 Manually install the missing modules as prompted in error messages.  
 
 ## Project Directory Structure  
-- **/static/** → Stores static assets (CSS, JavaScript, images, etc.)  
+
 - **/templates/** → Contains HTML templates for the web interface  
 - **app.py** → Main Flask application file  
-- **requirements.txt** → List of required Python packages  
+ 
