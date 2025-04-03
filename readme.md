@@ -27,7 +27,7 @@ cd Cyber-Project
 
 Manually install the missing modules as prompted in error messages.  
 
-### Step 4: Run the Application  
+### Step 3: Run the Application  
 Execute the following command to start the Flask application:  
 ```sh
 py app.py
