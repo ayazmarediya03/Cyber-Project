@@ -25,12 +25,7 @@ git clone https://github.com/ayazmarediya03/Cyber-Project
 cd Cyber-Project
 ```
 
-### Step 3: Install Dependencies  
-If you encounter any missing dependencies while running the project, install them using:  
-```sh
-pip install -r requirements.txt
-```
-If `requirements.txt` is not available, manually install the missing modules as prompted in error messages.  
+Manually install the missing modules as prompted in error messages.  
 
 ### Step 4: Run the Application  
 Execute the following command to start the Flask application:  
