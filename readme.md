@@ -25,8 +25,6 @@ git clone https://github.com/ayazmarediya03/Cyber-Project
 cd Cyber-Project
 ```
 
-Manually install the missing modules as prompted in error messages.  
-
 ### Step 3: Run the Application  
 Execute the following command to start the Flask application:  
 ```sh
@@ -36,6 +34,8 @@ or
 ```sh
 python app.py
 ```
+
+Manually install the missing modules as prompted in error messages.  
 
 ## Project Directory Structure  
 - **/static/** → Stores static assets (CSS, JavaScript, images, etc.)  
